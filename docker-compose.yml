@@ -1,0 +1,112 @@
+version: '3.8'
+
+networks:
+  vault-network:
+    driver: bridge
+
+
+services:
+  # Vault Node 1 (Leader)
+  vault-1:
+    image: hashicorp/vault:1.17.2
+    container_name: vault-node-1
+    hostname: vault-1
+    restart: unless-stopped
+    user: "100:1000"
+    networks:
+      - vault-network
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://vault-1:8200
+      - VAULT_CLUSTER_ADDR=http://vault-1:8201
+    volumes:
+      - ./vault-data-1:/vault/data
+      - ./vault-logs:/vault/logs
+      - ./config/vault-1.hcl:/vault/config/vault.hcl
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault.hcl
+
+  # Vault Node 2 
+  vault-2:
+    image: hashicorp/vault:1.17.2
+    container_name: vault-node-2
+    hostname: vault-2
+    restart: unless-stopped
+    user: "100:1000"
+    networks:
+      - vault-network
+    ports:
+      - "8201:8200"
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://vault-2:8200
+      - VAULT_CLUSTER_ADDR=http://vault-2:8201
+    volumes:
+      - ./vault-data-2:/vault/data
+      - ./vault-logs:/vault/logs
+      - ./config/vault-2.hcl:/vault/config/vault.hcl
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault.hcl
+    depends_on:
+      - vault-1
+
+  # Vault Node 3
+  vault-3:
+    image: hashicorp/vault:1.17.2
+    container_name: vault-node-3
+    hostname: vault-3
+    restart: unless-stopped
+    user: "100:1000"
+    networks:
+      - vault-network
+    ports:
+      - "8202:8200"
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://vault-3:8200
+      - VAULT_CLUSTER_ADDR=http://vault-3:8201
+    volumes:
+      - ./vault-data-3:/vault/data
+      - ./vault-logs:/vault/logs
+      - ./config/vault-3.hcl:/vault/config/vault.hcl
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault.hcl
+    depends_on:
+      - vault-1
+
+  # Nginx Load Balancer pour Vault
+  vault-lb:
+    image: nginx:alpine
+    container_name: vault-loadbalancer
+    restart: unless-stopped
+    networks:
+      - vault-network
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - vault-1
+      - vault-2
+      - vault-3
+
+  # Vault Init Container (pour l'initialisation)
+  vault-init:
+    image: hashicorp/vault:1.17.2
+    container_name: vault-init
+    networks:
+      - vault-network
+    volumes:
+      - ./scripts:/scripts
+      - ./init-data:/init-data
+    environment:
+      - VAULT_ADDR=http://vault-lb
+    depends_on:
+      - vault-lb
+    command: /scripts/init-vault.sh
