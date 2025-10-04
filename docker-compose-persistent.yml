@@ -1,0 +1,53 @@
+version: '3.8'
+
+networks:
+  vault-network:
+    driver: bridge
+
+services:
+  # Vault avec stockage persistant
+  vault:
+    image: hashicorp/vault:1.17.2
+    container_name: vault-datligent
+    hostname: vault
+    restart: unless-stopped
+    networks:
+      - vault-network
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./vault-data:/vault/data
+      - ./vault-logs:/vault/logs
+      - ./config/vault-persistent.hcl:/vault/config/vault.hcl
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault.hcl
+
+  # Interface Web via Nginx
+  vault-ui:
+    image: nginx:alpine
+    container_name: vault-ui-datligent
+    restart: unless-stopped
+    networks:
+      - vault-network
+    ports:
+      - "8081:80"
+    volumes:
+      - ./config/nginx-simple.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - vault
+
+  # Vault MCP Server (officiel HashiCorp)
+  vault-mcp:
+    image: ashgw/vault-mcp:latest
+    container_name: vault-mcp-datligent
+    restart: unless-stopped
+    networks:
+      - vault-network
+    ports:
+      - "3002:3000"
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-hvs.CAESIA00meLrKe8ZxfiA0FQin66oZKZyZr9nRfIVE0y87j26Gh4KHGh2cy53OEVwanVvRWY4Vm5hdExnOGFLakE1VXY}
+    depends_on:
+      - vault

@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude local config
+.claude/
+
+# Vault runtime data
+vault-data/
+vault-data-*/
+vault-logs/
+
+# Test and temporary files
+chrome-dev-mcp.json
+docker-mcp.json
+terraform.json
+*.png
+
+# Environment files with secrets
+.env.vault
+
+# Files containing Vault tokens and secrets
+init-data/vault-init.json
+init-data/ai-tools-token.txt
+claude_desktop_config_vault.json
