@@ -24,3 +24,19 @@ terraform.json
 init-data/vault-init.json
 init-data/ai-tools-token.txt
 claude_desktop_config_vault.json
+
+# Temporary test and note files
+gmail-test
+docker-*.txt
+docker-mcp-postgres
+postgres-docker
+*-test
+*.bak
+*.tmp
+
+# Large log files (keep directory structure but ignore content)
+vault-logs/*.log
+
+# Local development notes
+notes/
+scratch/
