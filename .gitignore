@@ -33,6 +33,7 @@ postgres-docker
 *-test
 *.bak
 *.tmp
+newkey
 
 # Large log files (keep directory structure but ignore content)
 vault-logs/*.log
